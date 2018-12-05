@@ -41,8 +41,16 @@ def analyze_sleep(events):
 
         else:
             current_guard = event[1]
-    pprint(guards)
+            print(current_guard)
+
     return guards, guard_minutes
+
+
+def find_max_minute(guard_patterns):
+    d = {}
+    for guard in guard_patterns.items():
+        d[guard[0]] = max(guard[1].items(), key=lambda x: x[1])
+    return d
 
 
 if __name__ == '__main__':
@@ -52,14 +60,29 @@ if __name__ == '__main__':
             events.append(parse(line))
         events.sort(key=lambda x: x[0])
         guard_patterns, guard_minutes = analyze_sleep(events)
+
         sleepiest = max(guard_minutes.items(), key=lambda x: x[1])
         sleepy_id = sleepiest[0]
-        print(guard_patterns[sleepiest])
+
         sleepys_most_sleepy_minute = max(guard_patterns[sleepy_id].items(), key=lambda x: x[1])[0]
 
         # Part one
         print("The sleepiest is {} with {} minutes".format(*sleepiest))
         print("They fell asleep most often during minute {}".format(sleepys_most_sleepy_minute))
         print("The answer is: {}".format(sleepys_most_sleepy_minute*int(sleepy_id)))
-
         # Part 2
+        for e in guard_patterns.items():
+            print(e[0], e[1])
+            print(e[1].items())
+        max_minutes = find_max_minute(guard_patterns)
+
+        # Access the minute tuple and then access the count
+        most_regular = max(max_minutes.items(), key=lambda x: x[1][1])
+
+        # most_regular = max(guard_patterns.items(), key=lambda guard_shift: max(
+        # guard_shift[1].items(), key=lambda minute: minute[1]))
+        print()
+        most_regular_guard = int(most_regular[0])
+        most_regular_minute = most_regular[1][0]
+        print("The most regular was {} at minute {}".format(most_regular_guard, most_regular_minute))
+        print("Answer: {}".format(most_regular_guard*most_regular_minute))
