@@ -20,6 +20,8 @@ def dirs(x, y):
 
 
 def get_extremes(generators):
+    """Returns two 4-tuples,
+     one of generators that lie on an edge of the bounding box and one of the actual coordinates"""
     min_x = None
     min_y = None
     max_x = None
@@ -58,7 +60,7 @@ def find_nearest(generators, x, y):
 
 
 def create_infinite_bound_checker(Left, Top, Right, Bottom):
-    def bound_checker(x, y):  # Returns true if point is not touching the infinite bound
+    def bound_checker(x, y):  # Returns true if point is beyond the infinite bound
         return Left.x <= x <= Right.x and Top.y <= y <= Bottom.y
     return bound_checker
 
@@ -100,10 +102,11 @@ def grow(generator, infinites, cells, in_bounds):
                     cells[cell] = (generator.id, generator.depth)
             else:
                 # If there was an entirely free space, this generator is not blocked
-                blocked = False
-                cells[cell] = (generator.id, generator.depth)
                 if not in_bounds(*cell):
                     infinites.add(generator)
+                else:
+                    blocked = False
+                    cells[cell] = (generator.id, generator.depth)
     return blocked
 
 
