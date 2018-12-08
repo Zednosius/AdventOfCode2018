@@ -77,8 +77,8 @@ def pprint_cells(cells, left=0, top=0, right=0, bottom=0):
         for x in range(left, right):
             cell = cells.get((x, y), False)
 
-            print("  " if cell is False else chr(ord('A') + cell[0])
-                  + str(cell[1]) if cell[0] is not None else "! ", end=" ")
+            print("  " if cell is False else chr(ord('A') + cell[0]) +
+                  str(cell[1]) if cell[0] is not None else "! ", end=" ")
         print()
 
 
@@ -122,13 +122,42 @@ def grow_cycle(generators, infinites, in_bounds, ltrb_coords):
     return cells, finite
 
 
+def min_dist_cell(generators, ltrb_coords):
+    l, t, r, b = ltrb_coords
+    min_dist = None
+    min_cell = None
+    for y in range(t, b+1):
+        for x in range(l, r+1):
+            sum_dist = sum([manhattan_dist(gen, x, y) for gen in generators])
+            if not min_dist or sum_dist < min_dist:
+                min_dist = sum_dist
+                min_cell = (x, y)
+    return min_cell
+
+
 def find_cells_with_distance(generators, ltrb_coords, distance=10000):
-    center = (sum((gen.x for gen in generators))/len(generators), sum((gen.y for gen in generators))/len(generators))
-    current_cell = (center[0], center[0]+1)
-    found_distance = -1
-    i = 0
-    while found_distance < distance:
-        pass
+    cx, cy = (int(sum((gen.x for gen in generators))/len(generators)),
+              int(sum((gen.y for gen in generators))/len(generators)))
+    # cx, cy = min_dist_cell(generators, ltrb_coords)
+    # print("Centroid:", (cx, cy))
+
+    count = 1
+    found_distance = True
+    d = 1
+    while found_distance:
+        found_distance = False
+        current_cell = (cx-d, cy-d)
+        for dx, dy in ((1, 0), (0, 1), (-1, 0), (0, -1)):
+            for i in range(2*d):
+                current_cell = (current_cell[0] + dx, current_cell[1] + dy)
+                # Count how many are below the distance
+                sum_dist = sum([manhattan_dist(gen, *current_cell) for gen in generators])
+                # print(sum_dist)
+                if sum_dist < distance:
+                    count += 1
+                    found_distance = True
+        d += 1
+    return count
 
 
 if __name__ == '__main__':
@@ -148,3 +177,6 @@ if __name__ == '__main__':
 
     max_area = max([count[finite_gen.id] for finite_gen in finites])
     print("Max area:", max_area)
+
+    within_10k = find_cells_with_distance(generators, ltrb_coords)
+    print("Cells within 10k: ", within_10k)
