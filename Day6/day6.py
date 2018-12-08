@@ -1,0 +1,150 @@
+from pprint import pprint
+from collections import defaultdict
+
+
+class Generator:
+    def __init__(self, x, y, m_id=None):
+        self.id = m_id if m_id is not None else id(self)
+        self.x = x
+        self.y = y
+        self.cells = {}
+        self.infinite = False
+        self.depth = 0
+
+    def __str__(self):
+        return "Gen{}({},{})".format(chr(ord('A')+self.id), self.x, self.y)
+
+
+def dirs(x, y):
+    return (x+1, y), (x-1, y), (x, y+1), (x, y-1)
+
+
+def get_extremes(generators):
+    min_x = None
+    min_y = None
+    max_x = None
+    max_y = None
+
+    for generator in generators:
+        if not min_x or generator.x < min_x.x:
+            min_x = generator
+        if not min_y or generator.y < min_y.y:
+            min_y = generator
+        if not max_x or generator.x > max_x.x:
+            max_x = generator
+        if not max_y or generator.y > max_y.y:
+            max_y = generator
+    return (min_x, min_y, max_x, max_y), (min_x.x, min_y.y, max_x.x, max_y.y)  # Left, Top, Right, Bottom
+
+
+def manhattan_dist(generator, x, y):
+    return abs(x - generator.x) + abs(y - generator.y)
+
+
+def find_nearest(generators, x, y):
+    dist = None
+    closest = set()
+    for gen in generators:
+        gen_dist = manhattan_dist(gen, x, y)
+
+        if dist is None or gen_dist < dist:
+            closest = set()
+            dist = gen_dist
+            closest.add(gen)
+        elif gen_dist == dist:
+            closest.add(gen)
+
+    return closest
+
+
+def create_infinite_bound_checker(Left, Top, Right, Bottom):
+    def bound_checker(x, y):  # Returns true if point is not touching the infinite bound
+        return Left.x <= x <= Right.x and Top.y <= y <= Bottom.y
+    return bound_checker
+
+
+def parse(i, line):
+    return Generator(*map(int, line.split(",")), m_id=i)
+
+
+def pprint_cells(cells, left=0, top=0, right=0, bottom=0):
+    print("  ", end=" ")
+    for i in range(left, right):
+        print(i, end="  ")
+    print()
+    for y in range(top, bottom):
+        print(y, end=": ")
+        for x in range(left, right):
+            cell = cells.get((x, y), False)
+
+            print("  " if cell is False else chr(ord('A') + cell[0])
+                  + str(cell[1]) if cell[0] is not None else "! ", end=" ")
+        print()
+
+
+def grow(generator, infinites, cells, in_bounds):
+    d = generator.depth
+    x = generator.x
+    y = generator.y
+    blocked = True
+    for i in range(0, d):
+        # Makes a diagonal around the generator 4 cells at a time.
+        for cell in ((x-d+i, y-i), (x+i, y-d+i), (x+d-i, y+i), (x-i, y+d-i)):
+
+            maybe_existing_cell = cells.get(cell, False)
+
+            if maybe_existing_cell:
+                if maybe_existing_cell[1] == generator.depth:
+                    cells[cell] = (None, generator.depth)
+                elif maybe_existing_cell[1] > generator.depth:
+                    cells[cell] = (generator.id, generator.depth)
+            else:
+                # If there was an entirely free space, this generator is not blocked
+                blocked = False
+                cells[cell] = (generator.id, generator.depth)
+                if not in_bounds(*cell):
+                    infinites.add(generator)
+    return blocked
+
+
+def grow_cycle(generators, infinites, in_bounds, ltrb_coords):
+    active = set(generators)
+    cells = {(g.x, g.y): (g.id, g.depth) for g in generators}
+    while len(active - infinites) > 0:
+        # pprint_cells(cells, *ltrb_coords)
+        # print("\n---------------\n")
+        for generator in generators:
+            generator.depth += 1
+            blocked = grow(generator, infinites, cells, in_bounds)
+            if blocked:  # Stop generator if it is entirely blocked
+                active.discard(generator)
+    finite = set(generators) - infinites
+    return cells, finite
+
+
+def find_cells_with_distance(generators, ltrb_coords, distance=10000):
+    center = (sum((gen.x for gen in generators))/len(generators), sum((gen.y for gen in generators))/len(generators))
+    current_cell = (center[0], center[0]+1)
+    found_distance = -1
+    i = 0
+    while found_distance < distance:
+        pass
+
+
+if __name__ == '__main__':
+    generators = []
+
+    with open("input.txt", 'r') as f:
+        for i, line in enumerate(f):
+            generators.append(parse(i, line))
+
+    bounders, ltrb_coords = get_extremes(generators)
+    cells, finites = grow_cycle(generators, set(bounders), create_infinite_bound_checker(*bounders), ltrb_coords)
+
+    count = defaultdict(int)
+
+    for (_, (cell_id, _)) in cells.items():
+        count[cell_id] += 1
+
+    max_area = max([count[finite_gen.id] for finite_gen in finites])
+    print("Max area:", max_area)
