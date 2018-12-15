@@ -43,7 +43,7 @@ if __name__ == '__main__':
     sim_steps = 0
 
     simulate(li, 345)  # Found by manually checking with code below
-
+    # Answer to part 2 is 10000+345
     while running:
         for event in pg.event.get():
             if event.type == pg.QUIT:
