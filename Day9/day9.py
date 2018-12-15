@@ -68,7 +68,6 @@ def play_game(players, marbles):
         # print("[{}] ".format(player), zero_node)
         player = (player % players) + 1
 
-    print(scores)
     winner = max(scores.items(), key=lambda x: x[1])
     print("Winner: player {} with {} points".format(*winner))
     return winner[1]
